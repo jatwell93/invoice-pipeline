@@ -1,0 +1,15 @@
+{
+  "id": "revlon",
+  "name": "Revlon Australia Pty Limited",
+  "abn": "18095360731",
+  "match_names": ["REVLON AUSTRALIA"],
+  "notes": "SAP layout, DD.MM.YYYY dates. Terms are '30 Days from Statement 2.5%' — 'Up to DD.MM.YYYY' is the early-payment discount deadline, used here as the due-date proxy. Header 'Total Amount.' is the inc-GST figure.",
+  "fields": {
+    "invoice_number": "Doc\\. No\\.\\s*\\**(\\d+)",
+    "invoice_date": "Doc\\. Date\\.\\s*\\**(\\d{2}\\.\\d{2}\\.\\d{4})",
+    "due_date": "Up to (\\d{2}\\.\\d{2}\\.\\d{4})",
+    "ex_gst": "Total Amount excl\\. GST\\|([\\d,]+\\.\\d{2})",
+    "gst": "GST Payable\\|([\\d,]+\\.\\d{2})",
+    "inc_gst": "Total Amount incl\\. GST\\|([\\d,]+\\.\\d{2})"
+  }
+}

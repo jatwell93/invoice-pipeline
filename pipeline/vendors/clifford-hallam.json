@@ -1,0 +1,15 @@
+{
+  "id": "clifford-hallam",
+  "name": "Clifford Hallam Healthcare Pty Ltd",
+  "abn": "38001655554",
+  "match_names": ["CLIFFORD HALLAM"],
+  "notes": "Create!form/Ghostscript layout; totals appear as a money triple before 'Totals in AUD'. Page-2 header has an empty 'Date Due:' so first-match wins.",
+  "fields": {
+    "invoice_number": "Invoice:\\s*(\\d+\\s*RI|\\d+)",
+    "invoice_date": "Date:\\s*(\\d{2}/\\d{2}/\\d{4})",
+    "due_date": "Date Due:\\s*(\\d{2}/\\d{2}/\\d{4})",
+    "ex_gst": {"regex": "([\\d,]+\\.\\d{2}) ([\\d,]+\\.\\d{2}) ([\\d,]+\\.\\d{2})[^\\n]*Totals in AUD", "group": 1},
+    "gst": {"regex": "([\\d,]+\\.\\d{2}) ([\\d,]+\\.\\d{2}) ([\\d,]+\\.\\d{2})[^\\n]*Totals in AUD", "group": 2},
+    "inc_gst": {"regex": "([\\d,]+\\.\\d{2}) ([\\d,]+\\.\\d{2}) ([\\d,]+\\.\\d{2})[^\\n]*Totals in AUD", "group": 3}
+  }
+}

@@ -1,0 +1,10 @@
+.fusion/
+.pi/
+.worktrees/
+node_modules/
+.fusion.bak-*/
+# KB-021: only the gitignored examples/ half of the research evidence base is
+# excluded from the UBS gate — the committed text evidence (brief.md,
+# sources.md, findings.md, rounds/) is scanned and any finding is a recorded
+# decision, not a silent skip. Scoped to the same boundary as .gitignore.
+research/invoice-automation/examples/

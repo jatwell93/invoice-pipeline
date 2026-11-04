@@ -1,0 +1,15 @@
+{
+  "id": "safe-test-tag",
+  "name": "Safe Test & Tag Solutions",
+  "abn": "46138739580",
+  "match_names": ["SAFE TEST & TAG", "SAFE TEST AND TAG"],
+  "notes": "Telerik report; invoice number and date share one line. No printed due date — terms 'within N days from date of invoice' drive a computed due date.",
+  "fields": {
+    "invoice_number": "Invoice Number:\\s*(\\d+)",
+    "invoice_date": "Invoice Number:\\s*\\d+\\s+(\\d{1,2} \\w{3} \\d{4})",
+    "terms_days": "within (\\d+) days",
+    "ex_gst": "\\|Subtotal\\|\\$?([\\d,]+\\.\\d{2})",
+    "gst": "\\|GST \\(10\\.00%\\)\\|\\$?([\\d,]+\\.\\d{2})",
+    "inc_gst": "\\|Total\\|\\$?([\\d,]+\\.\\d{2})"
+  }
+}

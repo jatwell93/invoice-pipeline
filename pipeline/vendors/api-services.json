@@ -1,0 +1,16 @@
+{
+  "id": "api-services",
+  "name": "API Services Australia Pty Ltd",
+  "abn": "69166626428",
+  "match_names": ["API SERVICES AUSTRALIA", "AUSTRALIAN PHARMACEUTICAL INDUSTRIES"],
+  "notes": "SAP 'ADJUSTMENT NOTE' (credit note) — the adversarial invoice-lookalike. Totals come from the '|ADJUSTMENT TOTAL||ex|gst|inc|' row; all values must be negative.",
+  "fields": {
+    "invoice_number": "ADJ NOTE NO:\\|(\\d+)",
+    "ref_invoice": "REF INVOICE NO:\\|+(\\d+)",
+    "invoice_date": "ADJ NOTE DATE:\\|(\\d{2}/\\d{2}/\\d{4})",
+    "due_date": "Due Date:\\|+[^|]*?(\\d{2}/\\d{2}/\\d{4})",
+    "ex_gst": {"regex": "\\|ADJUSTMENT TOTAL\\|\\|(-?[\\d,.]+)\\|(-?[\\d,.]+)\\|(-?[\\d,.]+)\\|", "group": 1},
+    "gst": {"regex": "\\|ADJUSTMENT TOTAL\\|\\|(-?[\\d,.]+)\\|(-?[\\d,.]+)\\|(-?[\\d,.]+)\\|", "group": 2},
+    "inc_gst": {"regex": "\\|ADJUSTMENT TOTAL\\|\\|(-?[\\d,.]+)\\|(-?[\\d,.]+)\\|(-?[\\d,.]+)\\|", "group": 3}
+  }
+}
