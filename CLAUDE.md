@@ -5,10 +5,10 @@ A single Python service that reads supplier invoices and statements from a mailb
 ## Privacy rules (non-negotiable)
 
 - Real supplier documents, the real ledger and the archive live in `~/invoice-private/`, outside this repo. Never read, open, list the contents of, copy or commit anything from that folder. If a task seems to need a real document, stop and ask the owner for a redacted file or an aggregate scoreboard instead.
-- Only redacted or synthetic files may go in `fixtures/redacted/`. Never commit real names, buyer ABNs, addresses, bank details, emails, phone numbers or staff names. Supplier names and supplier ABNs are public and may stay.
+- Only redacted or synthetic files may go in `fixtures/redacted/`, and only after `python3 scripts/leak_scan.py` passes. Never commit real names, buyer ABNs, addresses, bank details, emails, phone numbers or staff names. Supplier names and supplier ABNs are public and may stay.
 - Never paste real document content into a chat or an LLM call. The only production LLM call is the extraction fallback described in PLAN.md section 2, and it needs the owner's confirmation of a paid Australian-region tier first.
 - Before adding any file under `fixtures/`, run the leak scan from PLAN.md section 12.4 against the deny-list kept in the private folder.
-- `.gitignore` blocks `*.pdf`, `*.xlsx`, `*.ods` and `*.csv` by default. Do not force-add. Redacted fixtures are the one exception, under `fixtures/redacted/`.
+- `.gitignore` blocks `*.pdf`, `*.xlsx`, `*.ods`, `*.csv` and all of `fixtures/redacted/`. Redacted fixtures stay on this machine for the agent to read but are never committed. Do not force-add them.
 
 ## `needs-user` tasks
 

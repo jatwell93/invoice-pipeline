@@ -18,7 +18,7 @@ Three findings since rev. 2 collapse most of the original design's cost:
 - One owner, one machine, one entity per store. The owner is non-technical: day-to-day use must be "open a file / send an email", with no commands.
 - Alerts go by email to the owner.
 - Xero integration is later, not in scope. Dext may be replaced; the pay-run copies its layout only for familiarity.
-- Real supplier documents stay out of git. Only redacted fixtures are committed.
+- Real supplier documents stay out of git. Redacted fixtures stay out of git too: they live in `fixtures/redacted/` on the owner's machine, where the agent can read them, and are covered by the backup.
 
 ## 2. Target architecture (single Python service)
 
@@ -137,7 +137,7 @@ Kept at full rigor: supplier master (aliases, ABNs, terms — now seeding the ve
 
 - **Gate (replaces the per-field 95%):** on 20–30 docs one miss is already ~4%, so a percentage gate is noise. Gate on **zero silent errors**: every document is either correct in the ledger or lands in exceptions. 100% doc-class + credit/statement classification. Report the exception rate as the cost of the design; failures → vendor pack or rule fix, re-run.
 - **Corpus check (run locally, see §12):** owner pulls 20–30 real docs (invoices across the supplier mix, ≥1 big-3 statement, credit notes, the monthly Fred ODS). Include deliberate decoys (credit notes titled like invoices, "statement" in boilerplate, remittance advice in payment text). Score each key field vs the doc face in a sheet.
-- **Unit tests:** the spike's four samples + Fred report become **redacted** committed fixtures (names, ABNs, bank details replaced; layout kept). Real files stay in a git-ignored folder. Rail verdicts asserted per doc.
+- **Unit tests:** the spike's four samples + Fred report become **redacted** fixtures in the git-ignored `fixtures/redacted/` (names, ABNs, bank details replaced; layout kept), checked with `scripts/leak_scan.py` first. Real files stay in `~/invoice-private/`. Tests that need a fixture skip with a clear message when it is missing. Rail verdicts asserted per doc.
 - **Live check:** two weeks of mailbox intake vs owner's manual list — every invoice in the ledger or in exceptions; none silent.
 
 ### v1.1 — Laya (or JEV) comparison

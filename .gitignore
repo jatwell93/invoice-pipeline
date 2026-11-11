@@ -3,12 +3,14 @@
 # These entries are a second line of defence in case files are copied in by mistake.
 research/
 fixtures/raw/
+fixtures/redacted/
 private/
 invoice-private/
 *.deny-list
 leak-deny-list*
 
-# Real or generated documents of any kind, except redacted fixtures under fixtures/redacted/
+# Real, redacted or generated documents of any kind. Redacted fixtures stay on this machine
+# (visible to the agent in fixtures/redacted/) but are never committed.
 *.pdf
 *.PDF
 *.ods
@@ -16,7 +18,6 @@ leak-deny-list*
 *.xls
 *.csv
 *.eml
-!fixtures/redacted/**
 
 # Service outputs: ledger, archive, generated workbooks, database
 output/
