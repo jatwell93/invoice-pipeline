@@ -1,0 +1,59 @@
+# --- Privacy: real supplier documents and buyer data. Never commit. ---
+# Real documents live OUTSIDE the repo in ~/invoice-private/ (see PLAN.md section 12).
+# These entries are a second line of defence in case files are copied in by mistake.
+research/
+fixtures/raw/
+private/
+invoice-private/
+*.deny-list
+leak-deny-list*
+
+# Real or generated documents of any kind, except redacted fixtures under fixtures/redacted/
+*.pdf
+*.PDF
+*.ods
+*.xlsx
+*.xls
+*.csv
+*.eml
+!fixtures/redacted/**
+
+# Service outputs: ledger, archive, generated workbooks, database
+output/
+archive/
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Python
+.venv/
+.venv-*/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# OCR / model caches
+.paddleocr/
+.paddlex/
+*.onnx
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store

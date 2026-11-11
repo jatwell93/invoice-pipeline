@@ -30,7 +30,8 @@ Processing log (sqlite: msg+attachment id, file hash → state; idempotent)
         │
         ▼
 pdf-inspector  →  pdf_type flag + markdown text
-   (scan or "mixed" → review; ODS/XLSX → table parser)
+   (text layer usable → continue; "mixed" with usable text → continue, flagged;
+    no usable text layer → local OCR stage, §2 OCR; ODS/XLSX → table parser)
         │
         ▼
 Keyword rules (line-anchored) → doc class      [v1.1: Laya runs in shadow, §7]
@@ -64,6 +65,7 @@ Ledger (sqlite, source of truth) → generated xlsx views + document archive
 **Confidence score (per ledger row):** `confidence` (0–100), `confidence_band` (High / Medium / Low) and `confidence_reasons` (short text). The score is computed from deterministic evidence, not from a model's self-report:
 
 - extraction path: pack match scores highest; LLM fallback scores lower and is capped at Medium until the owner confirms it
+- text source: a native text layer scores highest; OCR text is capped at Medium until the owner confirms the row, and the OCR engine's per-line scores lower the score further when any key field comes from a low-scoring line
 - classification evidence: title-anchored rule match scores higher than a weaker or multi-rule match
 - vendor identification: sender address + ABN scores higher than alias-only or unknown sender
 - document quality: `text` scores higher than pdf-inspector `mixed`
@@ -74,6 +76,16 @@ Ledger (sqlite, source of truth) → generated xlsx views + document archive
 A failed rail check is never a low-confidence ledger row; it is an exception. Low confidence means "passed the checks on weaker evidence". Band thresholds are set from the corpus check: the Low band must contain the errors and near-misses, otherwise the weights are adjusted before go-live. The score and reasons are recomputed when a pack is fixed and the row is re-run.
 
 **LLM fallback:** Gemini flash (australia-southeast1) for template misses and low-confidence extractions — cents/month at this volume. Output is untrusted and accepted only through the same validation rail. **LLM-extracted rows are flagged `unconfirmed` in the ledger and exceptions view until the owner confirms them or a pack is added.** On a successful fallback the service drafts a candidate pack for the owner to approve, so the fallback shrinks over time.
+
+**OCR stage (image-only PDFs):** one main supplier sends invoices as image-only PDFs, roughly 10–15% of volume. The images are clean renders of the same layout as the supplier's text PDFs, with no scan degradation, so OCR accuracy should be high. This is a supported path, not an edge case.
+
+- **When it runs:** only when pdf-inspector finds no usable text layer. Documents with a usable text layer never go through OCR, including `mixed` ones such as `example_1`.
+- **Engine:** local only, so nothing leaves the machine. Candidates are PaddleOCR (`PaddleOCR().predict()` returns `rec_texts` and `rec_scores`; needs the `paddlepaddle` runtime and a first-run model download) and Tesseract (lighter to install). v1 ships one of them behind a single `ocr(image) -> lines + scores` function, chosen by the comparison in §7.
+- **Output:** the OCR text is turned into the same markdown shape as the text path, then goes through the same vendor pack, entity match and validation rail. Packs for OCR-only suppliers use anchors tolerant of OCR confusions (`O`/`0`, `l`/`1`, `S`/`5`, stray spaces in numbers).
+- **Safety net:** the arithmetic rail (ex + GST = inc, line sum = total) and the ABN checksum are the checks that catch a misread digit. An OCR-path row that fails any check is an exception, never a ledger row.
+- **Flags:** each row stores `text_source` (`native` | `ocr`) and the OCR engine and version, next to `extraction_method`. The owner sees `OCR` in the ledger and pay-run alongside the confidence band.
+- **Owner confirmation:** OCR rows stay `unconfirmed` (capped at Medium) until confirmed. Once the supplier has a measured clean record, the owner may choose to lift the cap for that supplier; this is a deliberate setting, never automatic.
+- **Not used:** sending the image to a cloud vision model. It would put buyer details outside the machine, so it is excluded unless the owner decides otherwise after §12 review.
 
 **Privacy:** document text stays local except when the LLM fallback runs; then the extracted text of that one document is sent to Gemini. Redact or accept this explicitly at pilot.
 
@@ -141,9 +153,18 @@ Goal: learn what a local typed-decision model adds over the keyword rules, witho
 - **Decoys are scored separately.** Report results on the decoy set on its own, because that is where the models can show a difference. Each decoy has an expected class and an expected Low/exception outcome. A decoy that lands in the ledger as High confidence is a failure.
 - **Confidence check:** for every approach, compare confidence against correctness. A useful confidence score puts the wrong or ambiguous documents in the Low band.
 
+### OCR engine comparison (v1 decision)
+
+Choose the OCR engine on the image-only supplier's real documents, run locally.
+
+- **Corpus:** at least 10 image-only invoices from that supplier, spanning different totals, line counts and any credit notes or statements they send as images.
+- **Measure per engine:** key-field exact-match (invoice number, date, ABN, ex-GST, GST, total); digit-level misreads; how often the arithmetic rail rejects a misread; how often a wrong value passes the rail (this must be zero); run time per document; install size and setup effort on the owner's machine.
+- **Decision rule (set before running):** pick the engine with zero rail-passing wrong values on the corpus. If both pass, pick the one that is easier to install and run. If neither does, those documents go to exceptions for manual entry and the plan is revisited.
+- **Fallback to native text:** if the supplier can be asked to send the original PDF with a text layer, that removes the OCR path for them entirely. This is a `needs-user` request (NU-15), not a dependency.
+
 ## 8. Build order
 
-1. `extract` — promote spike: source dispatch (pdf/ods/xlsx), classify, vendor packs, entity match, validation rail, LLM fallback stub. Input from a watched folder.
+1. `extract` — promote spike: source dispatch (pdf/ods/xlsx), classify, vendor packs, entity match, validation rail, LLM fallback stub, OCR stage for image-only PDFs (engine chosen by the §7 comparison). Input from a watched folder. **needs-user:** NU-14 (image-only sample) before the OCR stage is built.
 2. `ledger` — sqlite schema (Invoices, Statements, StatementLines, Payments, Exceptions) + xlsx view generator + archive writer + processing log.
 0. `bootstrap` — new repo and privacy rails (§9). **needs-user:** NU-1 to NU-4.
 1a. **needs-user:** NU-5 to NU-7 produce the shared-safe fixtures that step 1 needs.
@@ -184,6 +205,8 @@ The Fusion-era repo (`jatwell93/invoice-tracker`) is retired, not cleaned. The s
 | NU-10 | Provide the Gmail app password or OAuth, stored in the git-ignored secrets file; confirm the owner's PAID sending addresses | Secrets file populated; addresses listed | `ingest`, `evidence` |
 | NU-11 | Confirm a paid, Australian-region Gemini tier and check its data-use terms; create the API credentials | Terms checked and noted; key stored in secrets | LLM fallback |
 | NU-12 | Choose the backup target (external disk or cloud folder) | Target chosen and writable | `ops` |
+| NU-14 | Provide image-only invoices from the main image-sending supplier: at least 10 real files in the private folder, plus two redacted by black boxes for the shared fixtures (see §12.3: text-based anonymisers cannot edit image content, so redact the image itself, check no buyer text remains under or beside the boxes, and strip PDF metadata) | Real files in the private folder; two redacted files pass the §12.4 leak scan and a visual check | OCR stage, engine comparison |
+| NU-15 | Ask that supplier whether they can send the original PDF with a text layer instead of an image | Answer recorded; if yes, the OCR path for that supplier is retired | Nothing (optional) |
 | NU-13 | During the live check, confirm `unconfirmed` LLM rows and compare the ledger with the manual list for two weeks | Every invoice is in the ledger or in exceptions; none silent | Go-live |
 
 ## 10. Open inputs needed from owner
@@ -233,6 +256,7 @@ Anonymising everything would defeat sampling: the vendor packs, the ABN rail, th
 - **Format-preserving, not tokens.** A replacement like `[PIVA_1]` breaks regex anchors and the ABN checksum check. Use fake values with the same shape: same digit count and separators, and a valid-checksum fake ABN where an ABN is replaced.
 - **Consistent mapping across the whole set.** The same real buyer, invoice number or amount must map to the same fake value in every document, so statements, invoices, PAID emails and the Fred report still reconcile against each other.
 - **Exclude entirely** any document that contains patient or customer personal information (for example prescription or dispensing data). Do not anonymise those; leave them out of the sample.
+- **Image-only documents:** a text anonymiser cannot edit them. Redact by drawing opaque boxes over buyer details on the image, flatten the file so the boxes cannot be removed, and strip metadata. Then run OCR on the redacted file and confirm none of the deny-list values come back out. Layout and supplier details stay visible so the pack can still be built.
 - **Decoys:** build most from anonymised documents by editing them (credit note titled like an invoice, "statement" in boilerplate, proforma, duplicate or `-2` suffix numbers). Real adjustment notes are only needed for layout.
 
 ### 12.4 Checks before anything enters the repo or a chat
