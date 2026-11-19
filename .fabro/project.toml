@@ -1,0 +1,11 @@
+# Fabro project configuration
+# https://docs.fabro.sh/getting-started/quick-start
+
+_version = 1
+
+# Auto-create pull requests on successful workflow runs.
+# NOTE: only engages for clone-workspace environments; local runs ship via a
+# ship.sh script node in the workflow instead.
+[run.pull_request]
+enabled = true
+draft = true

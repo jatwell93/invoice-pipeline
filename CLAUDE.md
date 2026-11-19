@@ -25,3 +25,15 @@ Some tasks only the owner can do: downloading and redacting documents, creating 
 ## Open items to resolve early
 
 - Pilot store and the three big wholesalers (NU-3).
+
+## Software Factory Trial Context (Dual-Mode Protocol)
+
+This repository is Trial 1 (`Fabro` + `factory.yml`) in the active 3-project software-factory comparative trial tracked in the owner's sibling `software-factory` project (`../software-factory/trials/three-project-bakeoff.md`).
+
+1. **Product First, No Mid-Run Harness Gardening:** Your primary job is to deliver the product slice specified in `PLAN.md` §8 (starting with Step 1 `extract` and Step 2 `ledger`). Do not refactor or rewrite the orchestration harness, CI pipeline, or spec framework mid-task.
+2. **Separate Harness Failures from Product/Agent Failures:**
+   - **[HARNESS-ISSUE]:** If a tool, edit transport (`apply_patch`), CLI wrapper, sandbox permission, or verification script malfunctions, recover using the simplest fallback (e.g., scripted Python file edit or `rtk`) and record one line at the end of your summary or in `../software-factory/factory-friction.md` formatted as:
+     `YYYY-MM-DD · [HARNESS-ISSUE] invoice-pipeline/fabro · <symptom> · <workaround/fix>`
+   - **[NEEDS-USER / SPEC-GAP]:** If a human-only dependency blocks progress (`NU-1` through `NU-15` in `PLAN.md` §13), stop cleanly, state the exact `NU-*` ID and done-check, and do not invent placeholder business data.
+3. **Zero-Diff & Privacy Gate Discipline:** Never report a stage or task as complete if `git status --porcelain` is empty when code changes were required. Every verification gate (`verify.sh` or CI) MUST run `python3 scripts/leak_scan.py`, `pytest -q`, and `ubs -q .`.
+4. **Token & Context Hygiene:** Prefer `rtk` for large shell/test/git outputs when available, respect `.ubsignore`, and never read or list `~/invoice-private/`.
