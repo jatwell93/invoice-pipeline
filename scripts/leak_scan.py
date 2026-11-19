@@ -22,6 +22,7 @@ import sys
 import zipfile
 
 DEFAULT_DENY = os.path.expanduser("~/invoice-private/leak-deny-list.txt")
+FREE_TEXT_FIELDS = ("Title", "Subject", "Keywords", "Author", "Creator", "Producer")
 DEFAULT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fixtures", "redacted")
 
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
@@ -88,23 +89,56 @@ def main():
     print(f"Deny-list: {len(terms)} terms. Scanning {os.path.normpath(args.folder)}")
 
     problems = 0
+    status = {"FAIL": 0, "check": 0, "ok": 0}
+    totals = {"deny-list": 0, "emails": 0, "phones": 0, "bsb_like": 0, "abns": 0, "images": 0}
+    per_line = {}
     for folder, _, files in os.walk(args.folder):
         for name in sorted(files):
             path = os.path.join(folder, name)
             text, meta, images = extract(path)
-            blob = (name + "\n" + text + "\n" + meta).lower()
-            hits = sorted({n for n, t in terms if t in blob})
+            # Only the free-text document properties can hold private details. The other pdfinfo
+            # lines (Pages, JavaScript, Page size ...) are generic labels and would give false hits.
+            meta_text = "\n".join(l for l in meta.splitlines() if l.split(":")[0] in FREE_TEXT_FIELDS)
+            blob = (name + "\n" + text + "\n" + meta_text).lower()
+            # deny-list line number -> where it was found and how often (never the term itself).
+            # Places: name = file name, text = document text, meta = file properties.
+            parts = {"name": name.lower(), "text": text.lower(), "meta": meta_text.lower()}
+            where = {n: {k: s.count(t) for k, s in parts.items() if t in s} for n, t in terms if t in blob}
+            hits = {n: sum(w.values()) for n, w in where.items()}
+            shown = {n: ",".join(f"{k}={c}" for k, c in w.items()) or "across-boundary" for n, w in where.items()}
+            by_line = dict(terms)
+            for n, w in where.items():
+                if "meta" in w:
+                    # Name the pdfinfo field (a generic label such as Pages or Tagged), never its value.
+                    labels = sorted({l.split(":")[0].strip() for l in meta_text.splitlines() if by_line[n] in l.lower()})
+                    shown[n] += " [field: " + ", ".join(labels) + "]"
             emails, phones, bsbs = len(EMAIL.findall(blob)), len(PHONE.findall(blob)), len(BSB.findall(blob))
             abns = sum(1 for m in ABN.findall(blob) if abn_valid(re.sub(r"\s", "", m)))
-            fields = [l.split(":", 1)[1].strip() for l in meta.splitlines()
-                      if l.split(":")[0] in ("Author", "Creator", "Producer", "Title")]
-            flag = "FAIL" if hits or phones or bsbs else "check" if emails or abns or images else "ok"
+            # Field names only: the values can hold real names, so they are never printed.
+            fields = [l.split(":")[0] for l in meta.splitlines()
+                      if l.split(":")[0] in ("Author", "Creator", "Producer", "Title") and l.split(":", 1)[1].strip()]
+            # FAIL = a real deny-list hit. Phone-like, BSB-like, email, ABN and image findings are
+            # "check": they can be fake values or supplier details, so a person looks at them.
+            flag = "FAIL" if hits else "check" if emails or phones or bsbs or abns or images else "ok"
             if flag == "FAIL":
                 problems += 1
-            print(f"[{flag}] {os.path.relpath(path, args.folder)}: deny-list lines={hits or 'none'} "
+            status[flag] += 1
+            totals["deny-list"] += sum(hits.values())
+            for key, value in (("emails", emails), ("phones", phones), ("bsb_like", bsbs), ("abns", abns), ("images", images)):
+                totals[key] += value
+            for n, count in hits.items():
+                per_line[n] = per_line.get(n, 0) + count
+            print(f"[{flag}] {os.path.relpath(path, args.folder)}: deny-list hits={shown or 'none'} "
                   f"emails={emails} phones={phones} bsb_like={bsbs} abns={abns} images={images} meta={fields}")
 
-    print("\nFAIL = fix before committing. check = look by eye (supplier-only emails and ABNs, images).")
+    print("\n=== Summary ===")
+    print(f"files: {sum(status.values())}  FAIL={status['FAIL']}  check={status['check']}  ok={status['ok']}")
+    print("total findings: " + "  ".join(f"{k}={v}" for k, v in totals.items()))
+    if per_line:
+        worst = sorted(per_line.items(), key=lambda kv: kv[1], reverse=True)
+        print("deny-list hits by line number (line: count): " + ", ".join(f"{n}: {c}" for n, c in worst))
+    print("\nFAIL = a deny-list term is still in the file: fix it. "
+          "check = look by eye (emails, phones, BSBs, ABNs should be supplier or fake values; look at images).")
     return 1 if problems else 0
 
 
