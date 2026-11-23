@@ -19,6 +19,10 @@ leak-deny-list*
 *.csv
 *.eml
 
+# Wholly synthetic fixtures (invented values only) are committed for CI. Scan them with
+# `python3 scripts/leak_scan.py fixtures/synthetic` before adding.
+!fixtures/synthetic/**
+
 # Service outputs: ledger, archive, generated workbooks, database
 output/
 archive/
