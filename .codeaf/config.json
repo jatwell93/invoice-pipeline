@@ -1,0 +1,13 @@
+{
+  "tools.approvalMode": "prompt",
+  "tools.approval": {
+    "bash": "prompt",
+    "edit": "prompt",
+    "write": "prompt",
+    "read": "prompt",
+    "ls": "prompt",
+    "grep": "prompt",
+    "find": "prompt"
+  },
+  "tools.bashPatterns": "prompt *"
+}

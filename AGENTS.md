@@ -4,27 +4,7 @@ Read [`CLAUDE.md`](CLAUDE.md) and [`PLAN.md`](PLAN.md) first — all privacy rul
 
 ## Primary harness (Trial 1): CodeAF
 
-After the pay-check-app CodeAF warm-up ([`../software-factory/tasks/codeaf-setup-and-paycheck-overtime.md`](../software-factory/tasks/codeaf-setup-and-paycheck-overtime.md)), run packaging slices with CodeAF:
-
-```bash
-export CODEAF_TELEMETRY=off
-export CODEAF_MODEL_POOL=read
-mkdir -p .scratch
-
-# PlanDB worker + checker
-codeaf do --dir . \
-  --file specs/extract-and-ledger.md \
-  --check "python3 scripts/leak_scan.py" \
-  --check "pytest -q" \
-  --check "ubs -q ." \
-  --keep --json | tee .scratch/codeaf-extract-ledger-1.json
-
-# Optional: /senior-dev frozen tree on a private task/<slug> branch
-codeaf senior-dev --dir . \
-  --file specs/extract-and-ledger.md \
-  --verify-test "pytest -q" \
-  --json | tee .scratch/codeaf-senior-dev-1.json
-```
+Use the [CodeAF team runbook](../software-factory/trials/codeaf.md#trial-1-setup-invoice-pipeline-factory) after the pay-check-app warm-up. The project `.codeaf/config.json` requests approval for tool calls; it does not isolate the filesystem. Complete the privacy preflight before starting a chat for product work. Start with `extract`; run `ledger` separately after `extract` is proven.
 
 Log runs in `../software-factory/trials/codeaf.md` and the bake-off scorecard.
 
