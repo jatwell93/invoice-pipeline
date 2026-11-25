@@ -58,6 +58,9 @@ build/
 .paddlex/
 *.onnx
 
+# Trial / agent scratch (briefs, run JSON, handoff notes — never commit)
+.scratch/
+
 # Editor / OS
 .idea/
 .vscode/

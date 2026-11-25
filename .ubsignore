@@ -6,6 +6,8 @@ node_modules/
 .fabro/
 .claude/
 .agents/
+.codeaf/
+.scratch/
 .venv*/
 fixtures/
 # KB-021: only the gitignored examples/ half of the research evidence base is
